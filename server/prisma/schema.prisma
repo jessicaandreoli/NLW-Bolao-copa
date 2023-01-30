@@ -1,0 +1,72 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator erd {
+  provider = "prisma-erd-generator"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Pool {
+  //aqui ao passar @id to falando que é uma primary key e ao passar o restante dizendo p 
+  //gerar automaticamente.
+  id        String   @id @default(cuid())
+  title     String
+  code      String   @unique
+  createdAt DateTime @default(now())
+  ownerId   String?
+
+  participants Participant[]
+  owner        User?         @relation(fields: [ownerId], references: [id])
+}
+
+//De quais bolões o usuário está participando? Salvar aqui. Tabela pivô
+//O @@ unique mostra que só haverá um usuário específico para um bolão específico
+model Participant {
+  id     String @id @default(cuid())
+  userId String
+  poolId String
+
+  guesses Guess[]
+  user    User    @relation(fields: [userId], references: [id])
+  pool    Pool    @relation(fields: [poolId], references: [id])
+
+  @@unique([userId, poolId])
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  avatarUrl String?
+  createdAt DateTime @default(now())
+
+  participatingAt Participant[]
+  ownPools         Pool[]
+}
+
+model Game {
+  id                    String   @id @default(cuid())
+  date                  DateTime
+  firstTeamCountryCode  String
+  secondTeamCountryCode String
+
+  guesses Guess[]
+}
+
+//Tabela de palpite, realizou palpite sobre o jogo, salva aqui
+model Guess {
+  id               String   @id @default(cuid())
+  firstTeamsPoint  Int
+  secontTeamsPoint Int
+  createdAt        DateTime @default(now())
+  gameId           String
+  participantId    String
+
+  game        Game        @relation(fields: [gameId], references: [id])
+  participant Participant @relation(fields: [participantId], references: [id])
+}
